@@ -1,0 +1,120 @@
+{
+  "id": "root",
+  "type": "column",
+  "titlebar": "none",
+  "traffic_lights": [
+    14,
+    14
+  ],
+  "theme": "termlink",
+  "font": "JetBrains Mono",
+  "ui_font": "JetBrains Mono",
+  "terminal_padding": [
+    14,
+    10
+  ],
+  "background": "#1e1e2ecc",
+  "padding": [
+    0,
+    24
+  ],
+  "children": [
+    {
+      "id": "header",
+      "type": "block",
+      "size": {
+        "px": 44
+      },
+      "window_drag": true,
+      "content": {
+        "mod": "termlink",
+        "props": {
+          "role": "header"
+        }
+      }
+    },
+    {
+      "id": "body",
+      "type": "row",
+      "gap": 16,
+      "padding": [
+        6,
+        0
+      ],
+      "resizable": false,
+      "children": [
+        {
+          "id": "sidebar",
+          "type": "block",
+          "size": {
+            "px": 260
+          },
+          "min": 56,
+          "max": 420,
+          "content": {
+            "mod": "termlink",
+            "props": {
+              "role": "side"
+            }
+          }
+        },
+        {
+          "id": "main",
+          "type": "block",
+          "padding": [
+            8,
+            0
+          ],
+          "content": {
+            "tab": "active",
+            "pane": {
+              "gap": 16,
+              "radius": 0,
+              "background": "#1e1e2e00",
+              "lone": true,
+              "border": {
+                "width": 1,
+                "color": "#2a2b3d"
+              },
+              "focus": {
+                "width": 1,
+                "color": "#45475a"
+              },
+              "header": {
+                "content": {
+                  "mod": "termlink",
+                  "props": {
+                    "role": "pane"
+                  }
+                },
+                "height": 28,
+                "position": "top",
+                "reveal": "always"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "footer",
+      "type": "block",
+      "size": {
+        "px": 32
+      },
+      "content": {
+        "mod": "termlink",
+        "props": {
+          "role": "footer"
+        }
+      }
+    }
+  ],
+  "window_blur": true,
+  "terminal_opacity": 0,
+  "colors": {
+    "background": "#00000000",
+    "canvas": "#00000000",
+    "chrome": "#00000000"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "global": {
+    "ctrl-space 0": "termlink.sidebar",
+    "ctrl-space b": "layout.toggle:sidebar",
+    "ctrl-space shift-b": "termlink.side_size"
+  }
+}
