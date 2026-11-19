@@ -2,6 +2,21 @@
   "global": {
     "ctrl-space 0": "termlink.sidebar",
     "ctrl-space b": "layout.toggle:sidebar",
-    "ctrl-space shift-b": "termlink.side_size"
+    "ctrl-space shift-b": "termlink.side_size",
+    "ctrl-space o": "layout.toggle:panel",
+    "ctrl-space e": {
+      "command": "layout.select",
+      "args": {
+        "stack": "panel-body",
+        "child": "files"
+      }
+    },
+    "ctrl-space g": {
+      "command": "layout.select",
+      "args": {
+        "stack": "panel-body",
+        "child": "changes"
+      }
+    }
   }
 }

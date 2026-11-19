@@ -93,6 +93,43 @@
               }
             }
           }
+        },
+        {
+          "id": "panel",
+          "type": "column",
+          "hidden": true,
+          "size": {
+            "px": 340
+          },
+          "min": 260,
+          "max": 900,
+          "padding": [
+            8,
+            0
+          ],
+          "children": [
+            {
+              "id": "panel-body",
+              "type": "stack",
+              "active": "files",
+              "children": [
+                {
+                  "id": "files",
+                  "type": "block",
+                  "content": {
+                    "mod": "termlink-files"
+                  }
+                },
+                {
+                  "id": "changes",
+                  "type": "block",
+                  "content": {
+                    "mod": "termlink-changes"
+                  }
+                }
+              ]
+            }
+          ]
         }
       ]
     },

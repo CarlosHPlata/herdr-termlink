@@ -37,6 +37,11 @@ Top to bottom, inside 24px side padding on a `#1e1e2ecc` window (blurred where t
     focused), its folder (`~/…`), and its status (`● RUNNING` green, `▲ WAITING` yellow,
     `✓ DONE`, `IDLE`). The focused pane's header has a soft inner glow and a glowing rule
     under it; the others a faint dashed rule.
+  - **Panel, 340px** (resizable 260–900, hidden until `ctrl-space o`), at the right with 8px
+    vertical padding: a stack of Files and Changes. Both are framed like an unfocused pane:
+    square, 1px `#2a2b3d`, transparent background, JetBrains Mono; a 28px header with a
+    `┤ FILES ├` / `┤ CHANGES ├` legend in muted `#5bb0b0` (11px) and a dashed `#2a2b3d` rule.
+    Rows, badges, the commit field and button are square too (no rounding anywhere).
 - **Footer, 32px**. A neon line on top. The shown space's tabs as chips (shown one: `#82f2eb`
   fill, dark bold text), a small status square on chips whose agents aren't idle, `[+]` new
   tab; at the right `RUN n · WAIT n · DONE n` in their status colors.
@@ -71,6 +76,8 @@ opacity; the focused and any waiting agent at full. Names show as tooltips.
     Then `↑↓` / `j k` move a yellow cursor through the spaces, `⏎` opens one and gives the
     keyboard to its pane, `n` new space, `m` add a machine, `?` help, `esc` back.
   - `ctrl-space b`: hide / show the sidebar. Showing it brings back the size it had.
+  - `ctrl-space o`: show / hide the Files/Changes panel; `ctrl-space e` / `ctrl-space g` pick
+    Files / Changes inside it (they don't show a hidden panel).
   - `ctrl-space shift-b`: switch between full and the rail (and show it if hidden). The size
     is kept in shared state (`termlink.side.mode`), the full width as last dragged in
     `termlink.side.full`, so both survive restarts.
@@ -79,7 +86,8 @@ opacity; the focused and any waiting agent at full. Names show as tooltips.
 
 - `layouts/termlink.json`: a column: `header` block (44px, `window_drag`), `body` row
   (`sidebar` block 260px, min 56, max 420; `main` block with `{ "tab": "active" }` and its
-  pane frames), `footer` block (32px). Root: `titlebar: "none"`, `theme: "termlink"`,
+  pane frames; `panel` column, hidden, 340px, min 260, max 900, holding the `panel-body`
+  stack of `files` (`termlink-files`) and `changes` (`termlink-changes`) blocks), `footer` block (32px). Root: `titlebar: "none"`, `theme: "termlink"`,
   JetBrains Mono for terminals and mods, `window_blur`, `terminal_opacity: 0`, transparent
   `background`/`canvas`/`chrome` colors.
 - `themes/termlink.json`: the palette above.
@@ -93,10 +101,17 @@ opacity; the focused and any waiting agent at full. Names show as tooltips.
   `setAgentOrder`, `window()`. Commands: `space.select`, `space.new`, `tab.select`,
   `tab.new`, `tab.close`, `agent.focus`, `pane.split|zoom|close|focus`, `layout.resize`,
   `layout.show`, `app.settings`, `app.help`, `window.minimize|maximize|close`.
+- `mods/termlink-files/`, `mods/termlink-changes/`: `mod.clone` of the shipped `files` and
+  `changes`, with the outer `.rounded(10)` removed, `.rounded(4|7|8)` → 0, the border
+  `#2a2b3d`, `font_family("JetBrains Mono")`, and the 42px header → 28px with the legend and a
+  dashed bottom rule.
 - Shipped mods used: `machine-add`.
 
 ## Watch out
 
+- Don't edit the shipped `files` / `changes`: Herdr restores them on every start (and moves
+  your edit to `<name>-edited`). Clone them and point the layout at the clones.
+- The cloned mods' sources use CRLF line endings on Windows; match patterns accordingly.
 - Every copy of a mod gets every `<mod>.<command>`; each role ignores what isn't its own.
   A hidden sidebar gets none, so the header (always shown) handles `side_size`.
 - `FocusHandle.focus()` can't run during render: focus from the `nextCommand()` task.
@@ -112,6 +127,9 @@ opacity; the focused and any waiting agent at full. Names show as tooltips.
   status), not `agents()`, so a space with an idle shell-started agent still shows one.
 
 ## Done when
+
+- `ctrl-space o` shows a square Files panel at the right with a `┤ FILES ├` header the same
+  height as the pane headers; `ctrl-space g` shows Changes with the same frame.
 
 - `herdr-app check mods/termlink` passes and `layout.switch {name: "termlink"}` shows the
   header, sidebar box, panes and footer as above, with no `layout.error`.
