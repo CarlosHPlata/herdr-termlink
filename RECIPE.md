@@ -42,6 +42,10 @@ Top to bottom, inside 24px side padding on a `#1e1e2ecc` window (blurred where t
     square, 1px `#2a2b3d`, transparent background, JetBrains Mono; a 28px header with a
     `┤ FILES ├` / `┤ CHANGES ├` legend in muted `#5bb0b0` (11px) and a dashed `#2a2b3d` rule.
     Rows, badges, the commit field and button are square too (no rounding anywhere).
+    Clicking a file in Files opens a new tab named after the file, holding a read-only viewer:
+    the code with line numbers and syntax colors, and a 22px status line under it (dashed
+    `#2a2b3d` rule above; a `VIEW` chip `#313244`/`#cdd6f4`, the `~/…` path, `N lines`,
+    `READ-ONLY`, all 11px `#5bb0b0`). Its pane header reads `┤ FILE.NAME ├`.
 - **Footer, 32px**. A neon line on top. The shown space's tabs as chips (shown one: `#82f2eb`
   fill, dark bold text), a small status square on chips whose agents aren't idle, `[+]` new
   tab; at the right `RUN n · WAIT n · DONE n` in their status colors.
@@ -104,11 +108,19 @@ opacity; the focused and any waiting agent at full. Names show as tooltips.
 - `mods/termlink-files/`, `mods/termlink-changes/`: `mod.clone` of the shipped `files` and
   `changes`, with the outer `.rounded(10)` removed, `.rounded(4|7|8)` → 0, the border
   `#2a2b3d`, `font_family("JetBrains Mono")`, and the 42px header → 28px with the legend and a
-  dashed bottom rule.
+  dashed bottom rule. In Files, a file click runs `tab.new {name: <file name>, space, mod:
+  "termlink-viewer", props: {file: <root>/<path>, on: <machine>}}` instead of `show()`.
+- `mods/termlink-viewer/`: props `{file, on}`; `readTextFile` → a readonly `EditorState`
+  (same language map and syntax colors as Files) and the status line. `pane.js` names a
+  `termlink-viewer` pane after its tab (`spaces()[].tabs[]` by `p.tab`), since a mod pane's
+  `panes()` entry carries no props.
 - Shipped mods used: `machine-add`.
 
 ## Watch out
 
+- Write a new mod's `mod.json` (`"place": "none"`) before its `main.js`: if Herdr sees the
+  folder first it docks a copy by wrapping the layout root in a new row, and root-only fields
+  (`titlebar`, `window_blur`, theme) stop applying.
 - Don't edit the shipped `files` / `changes`: Herdr restores them on every start (and moves
   your edit to `<name>-edited`). Clone them and point the layout at the clones.
 - The cloned mods' sources use CRLF line endings on Windows; match patterns accordingly.
@@ -130,6 +142,8 @@ opacity; the focused and any waiting agent at full. Names show as tooltips.
 
 - `ctrl-space o` shows a square Files panel at the right with a `┤ FILES ├` header the same
   height as the pane headers; `ctrl-space g` shows Changes with the same frame.
+- Clicking `keys.json` in Files opens a `KEYS.JSON` tab with the highlighted file and
+  `VIEW ~/…/keys.json  N lines  READ-ONLY` under it; the panel keeps showing the tree.
 
 - `herdr-app check mods/termlink` passes and `layout.switch {name: "termlink"}` shows the
   header, sidebar box, panes and footer as above, with no `layout.error`.

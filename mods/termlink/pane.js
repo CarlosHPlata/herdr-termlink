@@ -3,7 +3,7 @@
 
 import { div } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { panes, props, run, home } from "herdr";
+import { panes, props, run, home, spaces } from "herdr";
 import { C, MONO, statusOf, sprite, upper, neonLine, innerGlow, GLOW } from "./kit.js";
 
 function folder(cwd) {
@@ -38,7 +38,11 @@ export default class PaneHead {
     if (!p) return div();
     const pane = p.pane;
     const st = p.status ? statusOf(p.status, p.program) : null;
-    const name = upper(((p.program?.agent || p.program?.shell) && p.program.name) || p.title || p.program?.name || "shell").replace(/ CODE$/, "");
+    // A file viewer pane (termlink-viewer) is named after its tab, which is the file's name.
+    const viewerTab = p.mod === "termlink-viewer" ? spaces().flatMap((s) => s.tabs ?? []).find((t) => t.id === p.tab) : null;
+    const name = viewerTab?.name
+      ? upper(viewerTab.name)
+      : upper(((p.program?.agent || p.program?.shell) && p.program.name) || p.title || p.program?.name || "shell").replace(/ CODE$/, "");
     const edge = p.focused ? C.ink : C.muted;
     return h_flex()
       .id(`tl-ph-${pane}`)
