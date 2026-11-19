@@ -27,6 +27,10 @@ Or ask an agent to add `herdr.dev/layouts/CarlosHPlata/herdr-termlink`.
 
 ## Open files in Helix
 
+> **Windows: not supported yet.** This works on Linux and WSL, and should on macOS. On native
+> Windows, herdr-core can't see that Helix is running in a terminal, so clicked files always open
+> in the viewer tab there.
+
 If you edit in [Helix](https://helix-editor.com), clicking a file in the Files panel can open it in
 the Helix you already have running, like `:open file`, instead of in a viewer tab. Add this to
 Helix's config (`~/.config/helix/config.toml`) on each machine where you run it (your computer,
@@ -43,9 +47,6 @@ shown tab, then other tabs), writes the file's path to `~/.cache/herdr/hx-open` 
 presses Esc and F9 in it and switches to it. Without the binding, without a Helix in that folder,
 or on native Windows (for now), the file opens read-only in its own tab as before. If Helix is
 running but the binding is missing, a one-time notice says so.
-
-Works on Linux and WSL (tested), and should on macOS (same mechanism, not yet tested). Native
-Windows isn't supported yet: herdr-core can't see Helix there.
 
 ## What runs
 
