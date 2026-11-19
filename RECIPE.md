@@ -110,6 +110,14 @@ opacity; the focused and any waiting agent at full. Names show as tooltips.
   `#2a2b3d`, `font_family("JetBrains Mono")`, and the 42px header → 28px with the legend and a
   dashed bottom rule. In Files, a file click runs `tab.new {name: <file name>, space, mod:
   "termlink-viewer", props: {file: <root>/<path>, on: <machine>}}` instead of `show()`.
+- `mods/termlink-files/helix.js` (`openInHelix(file, on)`): phase 0, per machine and cached
+  (10 min if wired, 30 s if not): `sh -c` checks `command -v hx` and that
+  `${XDG_CONFIG_HOME:-~/.config}/helix/config.toml` has a line with `herdr/hx-open`. Then the
+  shown space's terminal panes (focused, shown tab, other tabs) through `hc get --json`: the
+  first whose `foreground.name` is `hx`/`helix` and whose `foreground.cwd` holds the file.
+  Writes the path with `exec("sh", ["-c", 'printf %s "$1" > ~/.cache/herdr/hx-open', …], {on})`,
+  `hc keys <t> esc f9`, then `tab.select` and `pane.focus`. The click falls back to the viewer
+  tab when it resolves false.
 - `mods/termlink-viewer/`: props `{file, on}`; `readTextFile` → a readonly `EditorState`
   (same language map and syntax colors as Files) and the status line. `pane.js` names a
   `termlink-viewer` pane after its tab (`spaces()[].tabs[]` by `p.tab`), since a mod pane's
@@ -118,6 +126,13 @@ opacity; the focused and any waiting agent at full. Names show as tooltips.
 
 ## Watch out
 
+- `hc keys` can't type `:` (`shift+;` reaches Helix as Shift+semicolon), so drive Helix with a
+  binding, not by typing `:open`. `hc send` pastes; it isn't for normal-mode keys.
+- herdr-core reports a terminal's foreground program on Unix only; on Windows Helix shows as
+  `pwsh`, so the Helix path doesn't apply there yet.
+- `hc exec` on the command line splits a `sh -c` script on spaces; a mod's `exec()` doesn't.
+  `hc file` paths don't expand `~`.
+- A mod copy starts only once it's shown: test a mod in a shown tab, not `focus: false`.
 - Write a new mod's `mod.json` (`"place": "none"`) before its `main.js`: if Herdr sees the
   folder first it docks a copy by wrapping the layout root in a new row, and root-only fields
   (`titlebar`, `window_blur`, theme) stop applying.
@@ -142,6 +157,9 @@ opacity; the focused and any waiting agent at full. Names show as tooltips.
 
 - `ctrl-space o` shows a square Files panel at the right with a `┤ FILES ├` header the same
   height as the pane headers; `ctrl-space g` shows Changes with the same frame.
+- With the F9 binding in WSL's Helix config and `hx` running in a WSL space's folder, clicking a
+  file of that folder in Files shows that Helix with the file open (status line names it) in
+  about 300 ms; with the binding removed, the same click opens the viewer tab.
 - Clicking `keys.json` in Files opens a `KEYS.JSON` tab with the highlighted file and
   `VIEW ~/…/keys.json  N lines  READ-ONLY` under it; the panel keeps showing the tree.
 

@@ -25,6 +25,30 @@ Then `herdr-app check` each of the four mod folders and
 Or ask an agent to add `herdr.dev/layouts/CarlosHPlata/herdr-termlink`.
 `RECIPE.md` is the brief to build it from scratch.
 
+## Open files in Helix
+
+If you edit in [Helix](https://helix-editor.com), clicking a file in the Files panel can open it in
+the Helix you already have running, like `:open file`, instead of in a viewer tab. Add this to
+Helix's config (`~/.config/helix/config.toml`) on each machine where you run it (your computer,
+WSL, an ssh machine):
+
+```toml
+[keys.normal]
+F9 = ":open %sh{cat ~/.cache/herdr/hx-open}"
+```
+
+Needs Helix 25.01 or newer (`%sh{}`). Then, when you click a file, the panel looks in the shown
+space for a terminal running Helix whose folder holds the file (the focused pane first, then the
+shown tab, then other tabs), writes the file's path to `~/.cache/herdr/hx-open` on that machine,
+presses Esc and F9 in it and switches to it. Without the binding, without a Helix in that folder,
+or on native Windows (for now), the file opens read-only in its own tab as before. If Helix is
+running but the binding is missing, a one-time notice says so.
+
+Works on Linux and WSL (tested), and should on macOS (same mechanism, not yet tested). Native
+Windows isn't supported yet: herdr-core can't see Helix there.
+
+## What runs
+
 The `termlink` mod runs no programs except `hc machine ls` (to list your machines, only when they
 change), reads no files outside its folder and makes no network requests.
 
@@ -33,6 +57,8 @@ change), reads no files outside its folder and makes no network requests.
 with `termlink-viewer` instead of previewing it inside the panel. `termlink-viewer` only reads
 the file it was opened with. Like the originals, they read
 the shown space's folder and run `git` in it (status, diff, and `git commit` when you press
-Commit in Changes), on the space's machine. No network requests.
+Commit in Changes), on the space's machine. No network requests. On a file click, `termlink-files` also runs `sh`
+on the space's machine to check Helix's config and write `~/.cache/herdr/hx-open`, and
+`hc get` / `hc keys` on the space's terminals (see Open files in Helix).
 
 MIT licensed.
