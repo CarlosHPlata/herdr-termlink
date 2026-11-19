@@ -128,6 +128,11 @@ opacity; the focused and any waiting agent at full. Names show as tooltips.
 - `mods/termlink-dialog/`: props `{id, mode: "prompt" | "confirm", title, detail, yes, no}`; square,
   `#1e1e2e`, 1px `#45475a`, a yellow `┤ TITLE ├` rule; prompt: Enter answers with the text;
   confirm: `y` yes, `n` / Esc no (Enter does nothing, so a delete needs a deliberate key).
+- Panel mode: the `files` block's `content.props.mode`, `"pinned"` (default) or `"auto-hide"`.
+  termlink-files reads `props().mode`; the header finds the `files` node in `layout()`.
+  `ctrl-space o` is `termlink.panel` (header): pinned → `layout.toggle panel`; auto-hide → same
+  as `termlink.files`. Auto-hide: the panel's 250 ms focus check runs `layout.hide panel` when the
+  keyboard leaves, unless a dialog of its own is open or `window().active` is false.
 - `ctrl-space e` is `termlink.files`: the header (always shown) runs `layout.show panel`,
   `layout.select` Files and stamps shared `termlink.files.focus`; termlink-files takes the keyboard
   when it sees a new stamp (or a fresh one at start, if the panel was hidden until then).
@@ -146,6 +151,11 @@ opacity; the focused and any waiting agent at full. Names show as tooltips.
 - `hc exec` on the command line splits a `sh -c` script on spaces; a mod's `exec()` doesn't.
   `hc file` paths don't expand `~`.
 - A mod copy starts only once it's shown: test a mod in a shown tab, not `focus: false`.
+- Fields you add to the cloned Files view must not reuse its own names: it already has
+  `this.pending` (a Set of loading folders, reset on every context change), so the dialog state is
+  `tlDialog`. Reusing `pending` left auto-hide stuck after the first viewer tab.
+- Testing auto-hide from a shell: the Herdr window isn't the active OS window then, so the
+  `window().active` guard keeps the panel; that guard is what stops alt-tab from hiding it.
 - `FocusHandle.focus()` throws during render, and a task `cx.spawn`ed from `render()` starts inside
   it: react to shared state from render with `cx.timer.after(1, …)`, not `cx.spawn`.
 - Write a new mod's `mod.json` (`"place": "none"`) before its `main.js`: if Herdr sees the
@@ -172,6 +182,8 @@ opacity; the focused and any waiting agent at full. Names show as tooltips.
 
 - `ctrl-space e` from a terminal shows Files with a yellow legend, a yellow cursor row and the key
   row; `j`/`k` move it, `⏎` on a file opens it and the keyboard goes there, `esc` goes back.
+- With `"mode": "auto-hide"`: `ctrl-space e` shows Files focused, `esc` hides it and the panes
+  widen; `ctrl-space o` does the same as `e`. With `"pinned"` the panel stays after `esc`.
 - `a` then `x/y.txt` ⏎ creates `x/y.txt`; `c`, `p` on it makes `y copy.txt`; `r`, `y` deletes it.
 
 - `ctrl-space o` shows a square Files panel at the right with a `┤ FILES ├` header the same

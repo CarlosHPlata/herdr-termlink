@@ -11,7 +11,11 @@
 // The panel takes the keyboard with pane.go (it's "focusable") or ctrl-space e (termlink.files).
 import { div } from "gpui-kit";
 import { h_flex, ScrollHandle } from "gpui-base";
-import { nextCommand, focused, panes, run, openOverlay, shared, exec, window, notify } from "herdr";
+import { nextCommand, focused, panes, props, run, openOverlay, shared, exec, window, notify } from "herdr";
+
+// "pinned" (default): the panel stays until ctrl-space o. "auto-hide": it shows with the keyboard
+// and hides when it loses it. Set on the Files block in layouts/termlink.json: props { mode }.
+export const panelMode = () => (props()?.mode === "auto-hide" ? "auto-hide" : "pinned");
 
 const C = { s100: "#26263a", frame: "#45475a", ink: "#cdd6f4", muted: "#5bb0b0", yellow: "#fbd207" };
 export const FOCUS_KEY = "termlink.files.focus"; // set by termlink's header on ctrl-space e
@@ -25,13 +29,24 @@ const q = (s) => `'${String(s).replace(/['‘’]/g, "''")}'`; // a PowerShell s
 export function attachKeys(v, cx) {
   v.handle = cx.focus_handle();
   v.treeScroll = ScrollHandle.new();
-  v.sel = null; v.back = null; v.clip = null; v.pending = null;
+  v.sel = null; v.back = null; v.clip = null; v.tlDialog = null;
   const f = shared(FOCUS_KEY);
   v.seenFocus = f;
   // There is no blur event: redraw when the panel gains or loses the keyboard (by esc, a click,
   // pane.go), so the yellow legend and cursor never linger. A boolean check, no processes.
   v.hadFocus = false;
-  cx.timer.every(250, (cx) => { const now = v.handle.is_focused(); if (now !== v.hadFocus) { v.hadFocus = now; cx.notify(); } });
+  // Auto-hide rests hidden. This copy restarts when the mode changes (new props) and when Herdr
+  // starts, so a panel left open then hides, unless ctrl-space e just gave it the keyboard.
+  if (panelMode() === "auto-hide") cx.timer.after(800, () => { if (!v.handle.is_focused() && !v.tlDialog) run("layout.hide", { id: "panel" }); });
+  cx.timer.every(250, (cx) => {
+    const now = v.handle.is_focused();
+    if (now === v.hadFocus) return;
+    v.hadFocus = now;
+    // Auto-hide: the panel goes when it loses the keyboard (esc, enter on a file, a click
+    // elsewhere), but not for its own dialogs (a, r) or when the whole window loses focus.
+    if (!now && panelMode() === "auto-hide" && !v.tlDialog && window()?.active !== false) run("layout.hide", { id: "panel" });
+    cx.notify();
+  });
   if (typeof f === "number" && Date.now() - f < 3000) cx.timer.after(1, (cx) => { take(v); cx.notify(); }); // just shown by ctrl-space e
   cx.spawn(async (cx) => {
     for (;;) {
@@ -103,7 +118,7 @@ export function onKey(v, e, cx) {
 
 function ask(v, spec, then) {
   const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-  v.pending = { id, then };
+  v.tlDialog = { id, then };
   openOverlay({ mod: "termlink-dialog", kind: "dialog", frame: "none", width: 440, height: spec.mode === "prompt" ? 150 : 130, props: { id, ...spec } });
 }
 
@@ -182,8 +197,8 @@ function poll(v, cx) {
   const f = shared(FOCUS_KEY);
   if (f !== v.seenFocus) { v.seenFocus = f; cx.timer.after(1, (cx) => { take(v); cx.notify(); }); }
   const r = shared(RESULT_KEY);
-  if (v.pending && r && r.id === v.pending.id) {
-    const job = v.pending; v.pending = null;
+  if (v.tlDialog && r && r.id === v.tlDialog.id) {
+    const job = v.tlDialog; v.tlDialog = null;
     cx.timer.after(1, (cx) => {
       v.handle.focus();
       cx.spawn(async (cx) => { try { await job.then(r.ok, r.value, cx); } finally { cx.notify(); } });

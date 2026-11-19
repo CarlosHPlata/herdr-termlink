@@ -2,7 +2,7 @@
 
 import { div } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { spaces, machines, run, window as win, nextCommand, shared, setShared } from "herdr";
+import { spaces, machines, run, window as win, nextCommand, shared, setShared, layout } from "herdr";
 import { C, MONO, own, upper, neonLine, RAIL_PX } from "./kit.js";
 
 const pad = (n) => String(n).padStart(2, "0");
@@ -49,6 +49,25 @@ function showFiles() {
   setShared("termlink.files.focus", Date.now());
 }
 
+// The Files panel's mode, from its block in layouts/termlink.json: content.props.mode,
+// "pinned" (default) or "auto-hide". termlink-files reads the same prop.
+function filesMode() {
+  const find = (n) => {
+    if (!n || typeof n !== "object") return null;
+    if (n.id === "files" && n.content) return n;
+    for (const c of n.children ?? []) { const hit = find(c); if (hit) return hit; }
+    return null;
+  };
+  return find(layout())?.content?.props?.mode === "auto-hide" ? "auto-hide" : "pinned";
+}
+
+// ctrl-space o: pinned toggles the panel; auto-hide has nothing to keep open, so it does what
+// ctrl-space e does (show Files with the keyboard; it hides again when the keyboard leaves).
+function togglePanel() {
+  if (filesMode() === "auto-hide") showFiles();
+  else run("layout.toggle", { id: "panel" });
+}
+
 export default class Header {
   init(_p, cx) {
     this.start = Date.now();
@@ -59,6 +78,7 @@ export default class Header {
         const c = await nextCommand();
         if (c === "side_size") toggleSideSize();
         else if (c === "files") showFiles();
+        else if (c === "panel") togglePanel();
       }
     });
     // The clock counts minutes: redraw once a minute, on the minute, and only while the

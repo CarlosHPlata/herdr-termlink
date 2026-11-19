@@ -16,7 +16,7 @@ Copy into your Herdr home (`~/.config/herdr-app`):
 - `themes/termlink.json` → `themes/`
 - `mods/termlink/`, `mods/termlink-files/`, `mods/termlink-changes/` and `mods/termlink-viewer/` and `mods/termlink-dialog/` → `mods/`
 - merge `keys.json` into yours (`ctrl-space 0` focus the sidebar, `ctrl-space b` hide/show,
-  `ctrl-space shift-b` full ↔ rail, `ctrl-space o` the Files/Changes panel,
+  `ctrl-space shift-b` full ↔ rail, `ctrl-space o` the Files/Changes panel (see Panel mode),
   `ctrl-space e` shows Files and gives it the keyboard, `ctrl-space g` switches it to Changes); ask before replacing keys you already use.
 
 Then `herdr-app check` each of the five mod folders and
@@ -43,6 +43,26 @@ bottom:
 | `esc` | back to the pane you came from |
 
 Pasting works within one machine (copy and paste in spaces on the same machine).
+
+## Panel mode: pinned or auto-hide
+
+The Files panel has two modes, set in `layouts/termlink.json` on the `files` block:
+
+```json
+{ "id": "files", "type": "block",
+  "content": { "mod": "termlink-files", "props": { "mode": "pinned" } } }
+```
+
+- **`pinned`** (the default): the panel stays open while you work. `ctrl-space o` shows or hides
+  it; `ctrl-space e` shows it and gives it the keyboard, and it stays after `esc`.
+- **`auto-hide`**: for smaller screens. The panel only shows when you need it: `ctrl-space e` (or
+  `ctrl-space o`, which does the same in this mode) shows it with the keyboard, and it hides again
+  as soon as the keyboard leaves it: `esc`, `⏎` on a file, or a click on a pane. Its own
+  new-file and delete dialogs don't hide it, and neither does switching to another app.
+
+Change the word and save: Herdr applies the layout at once. In `auto-hide` an open panel hides
+right away (and stays hidden when Herdr starts) until you call it with `ctrl-space e`. The panes resize when the panel shows
+and hides.
 
 ## Open files in Neovim or Helix
 

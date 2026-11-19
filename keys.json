@@ -3,7 +3,7 @@
     "ctrl-space 0": "termlink.sidebar",
     "ctrl-space b": "layout.toggle:sidebar",
     "ctrl-space shift-b": "termlink.side_size",
-    "ctrl-space o": "layout.toggle:panel",
+    "ctrl-space o": "termlink.panel",
     "ctrl-space e": "termlink.files",
     "ctrl-space g": {
       "command": "layout.select",
