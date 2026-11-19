@@ -44,25 +44,49 @@ bottom:
 
 Pasting works within one machine (copy and paste in spaces on the same machine).
 
-## Panel mode: pinned or auto-hide
+## Panel mode: pinned, auto-hide or drawer
 
-The Files panel has two modes, set in `layouts/termlink.json` on the `files` block:
+The Files panel has three modes, set in `layouts/termlink.json` on the `files` block:
 
 ```json
 { "id": "files", "type": "block",
   "content": { "mod": "termlink-files", "props": { "mode": "pinned" } } }
 ```
 
-- **`pinned`** (the default): the panel stays open while you work. `ctrl-space o` shows or hides
-  it; `ctrl-space e` shows it and gives it the keyboard, and it stays after `esc`.
-- **`auto-hide`**: for smaller screens. The panel only shows when you need it: `ctrl-space e` (or
-  `ctrl-space o`, which does the same in this mode) shows it with the keyboard, and it hides again
-  as soon as the keyboard leaves it: `esc`, `⏎` on a file, or a click on a pane. Its own
-  new-file and delete dialogs don't hide it, and neither does switching to another app.
+| `mode` | The panel | The panes |
+|---|---|---|
+| `"pinned"` (default) | a column that stays open while you work | share the width with it |
+| `"auto-hide"` | the same column, only while it has the keyboard | narrow when it shows, widen when it hides |
+| `"auto-hide-drawer"` | a drawer that slides in over the terminals while it has the keyboard | never resize |
 
-Change the word and save: Herdr applies the layout at once. In `auto-hide` an open panel hides
-right away (and stays hidden when Herdr starts) until you call it with `ctrl-space e`. The panes resize when the panel shows
-and hides.
+Change the word and save: Herdr applies the layout at once.
+
+### `pinned`
+
+The panel stays open while you work. `ctrl-space o` shows or hides it; `ctrl-space e` shows it
+and gives it the keyboard, and it stays after `esc`. Best on a wide screen.
+
+![Pinned: the panel stays open](docs/images/pinned.gif)
+
+### `auto-hide`
+
+For smaller screens. The panel only shows when you need it: `ctrl-space e` (or `ctrl-space o`,
+which does the same in this mode) shows it with the keyboard, and it hides again as soon as the
+keyboard leaves it: `esc`, `⏎` on a file, or a click on a pane. Its own new-file and delete
+dialogs don't hide it, and neither does switching to another app. An open panel hides when you
+switch to this mode, and it starts hidden with Herdr. The panes resize when it shows and hides.
+
+![Auto-hide: the panel shows with the keyboard and the panes make room](docs/images/auto-hide.gif)
+
+### `auto-hide-drawer`
+
+Like `auto-hide`, but the panel slides in from the right *over* the terminals instead of taking
+room beside them, so nothing resizes and programs in your panes (an editor, a running agent)
+don't redraw. It sits where the column would, between the header and the footer, and slides back
+out when the keyboard leaves it. `ctrl-space e` while it's open just gives it the keyboard back.
+Changes (`ctrl-space g`) still opens as the column.
+
+![Drawer: the panel slides over the terminals](docs/images/auto-hide-drawer.gif)
 
 ## Open files in Neovim or Helix
 

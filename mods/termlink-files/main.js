@@ -3,7 +3,7 @@ import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, Editor, EditorState } from "gpui-base";
 import { spaces, panes, focused, exec, readTextFile, watchFolder, theme, settings, window, run } from "herdr";
 import { openInEditor } from "./editors.js";
-import { attachKeys, onKey, legend, isCursor, cursorRow, hints } from "./keys.js";
+import { attachKeys, onKey, legend, isCursor, cursorRow, hints, drawer } from "./keys.js";
 
 function location() {
   const space = spaces().find(s => s.active), f = focused();
@@ -178,7 +178,7 @@ export default class Files extends View {
   render(cx) {
     if (key() !== this.context?.key) this.refresh(cx);
     const t = theme();
-    return v_flex().id("files").track_focus(this.handle).on_key_down((e, cx) => onKey(this, e, cx)).size_full().min_h(0).overflow_hidden().bg(t.background).border_1().border_color("#2a2b3d").text_color(t.foreground).text_size(13).font_family("JetBrains Mono")
+    return drawer(this, v_flex().id("files").track_focus(this.handle).on_key_down((e, cx) => onKey(this, e, cx)).size_full().min_h(0).overflow_hidden().bg(t.background).border_1().border_color("#2a2b3d").text_color(t.foreground).text_size(13).font_family("JetBrains Mono")
       .child(h_flex().h(28).flex_none().px(10).gap(8).items_center().text_size(11).border_b(1).border_dashed().border_color("#2a2b3d")
         .when(Boolean(this.file), el => el.child(div().id("files-back").w(20).cursor_pointer().text_color(t.muted).on_click((_e, cx) => { this.show(null); cx.notify(); }).child("←")))
         .child(legend(this))
@@ -187,6 +187,6 @@ export default class Files extends View {
         .when(Boolean(this.error) || !this.entries.get("")?.length, el => el.child(div().p(8).text_size(12).text_color(t.dim).child(this.error || (this.loading ? "Loading files…" : this.root ? "No files" : "No folder"))))
         .when(this.limited, el => el.child(div().p(8).text_size(11).text_color(t.dim).child("File list limited to 500 entries per folder and 5,000 total")))))
       .when(Boolean(this.file), el => el.child(this.code ? Editor.new(this.code).flex_1().min_h(0) : div().p(12).text_color(t.dim).child(this.fileError || "Loading file…")))
-      .child(hints(this, cx));
+      .child(hints(this, cx)));
   }
 }

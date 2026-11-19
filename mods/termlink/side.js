@@ -4,7 +4,7 @@
 import { div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { spaces, agents, panes, machines, hc, run, openOverlay, setAgentOrder, nextCommand, focused, shared, setShared, settings } from "herdr";
-import { C, MONO, STATUS, statusOf, sprite, pixels, box, upper, RAIL_PX } from "./kit.js";
+import { C, MONO, STATUS, statusOf, sprite, pixels, box, upper, RAIL_PX, geo } from "./kit.js";
 
 // Two letters for a space in the rail: the first letters of its first two words
 // (notes-vault: NV), else its first two letters.
@@ -291,6 +291,7 @@ export default class Side {
       .on_size_change((size) => {
         // Layout sizes are at zoom 1; what we measure is zoomed.
         const w = Math.round(size.width / (settings()?.zoom || 1));
+        geo.bodyH = Math.round(size.height / (settings()?.zoom || 1));
         if (w > RAIL_PX + 40 && Math.abs(w - (shared("termlink.side.full") ?? 0)) > 1) setShared("termlink.side.full", w);
       })
       .font_family(MONO)

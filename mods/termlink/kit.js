@@ -166,3 +166,8 @@ export function box(id, legend, right, borderColor = C.line) {
 }
 
 export const upper = (s) => String(s ?? "").toUpperCase();
+
+// Window geometry for the Files drawer (auto-hide), in layout px (zoom 1): the header reports
+// winW (its width + the root's 24px side padding), the sidebar bodyH (the body row's height).
+// Shared by the copies of this mod; written only when a size changes.
+export const geo = { winW: 0, bodyH: 0 };

@@ -11,11 +11,17 @@
 // The panel takes the keyboard with pane.go (it's "focusable") or ctrl-space e (termlink.files).
 import { div } from "gpui-kit";
 import { h_flex, ScrollHandle } from "gpui-base";
-import { nextCommand, focused, panes, props, run, openOverlay, shared, exec, window, notify } from "herdr";
+import { nextCommand, focused, panes, props, run, openOverlay, closeOverlay, shared, setShared, exec, window, notify } from "herdr";
 
 // "pinned" (default): the panel stays until ctrl-space o. "auto-hide": it shows with the keyboard
-// and hides when it loses it. Set on the Files block in layouts/termlink.json: props { mode }.
-export const panelMode = () => (props()?.mode === "auto-hide" ? "auto-hide" : "pinned");
+// and hides when it loses it. "auto-hide-drawer": the same, but as a drawer over the terminals
+// (the column copy then rests hidden, like auto-hide). Set on the Files block in
+// layouts/termlink.json: props { mode }.
+export const panelMode = () => (["auto-hide", "auto-hide-drawer"].includes(props()?.mode) ? "auto-hide" : "pinned");
+// The auto-hide drawer: a copy termlink's header opens as a frameless window over the terminals
+// (props { mode: "drawer" }). It slides in, takes the keyboard, and slides out when it loses it.
+export const isDrawer = () => props()?.mode === "drawer";
+const DRAWER_KEY = "termlink.drawer", SLIDE = { duration: 180, easing: "ease-out" };
 
 const C = { s100: "#26263a", frame: "#45475a", ink: "#cdd6f4", muted: "#5bb0b0", yellow: "#fbd207" };
 export const FOCUS_KEY = "termlink.files.focus"; // set by termlink's header on ctrl-space e
@@ -37,9 +43,23 @@ export function attachKeys(v, cx) {
   v.hadFocus = false;
   // Auto-hide rests hidden. This copy restarts when the mode changes (new props) and when Herdr
   // starts, so a panel left open then hides, unless ctrl-space e just gave it the keyboard.
+  v.slid = false; v.closing = false; v.everFocused = false;
+  // A layout switch closes windows too: whichever way the drawer goes, it's no longer up.
+  // Only the latest drawer counts: the header stamps each open (shared termlink.drawer { at }).
+  // One that starts long after its stamp is a reload or a leftover, and goes at once.
+  if (isDrawer()) {
+    v.drawerAt = shared(DRAWER_KEY)?.at ?? 0;
+    v.close = async () => { if (shared(DRAWER_KEY)?.at === v.drawerAt) setShared(DRAWER_KEY, null); };
+    if (Date.now() - v.drawerAt > 2000) cx.timer.after(1, (cx) => hideDrawer(v, cx));
+    else cx.timer.after(16, (cx) => { v.slid = true; take(v); cx.notify(); }); // slide in: left 340 → 0
+  }
   if (panelMode() === "auto-hide") cx.timer.after(800, () => { if (!v.handle.is_focused() && !v.tlDialog) run("layout.hide", { id: "panel" }); });
   cx.timer.every(250, (cx) => {
     const now = v.handle.is_focused();
+    if (now) v.everFocused = true;
+    // The drawer goes once the keyboard is elsewhere (checked every tick, not only on a change,
+    // so coming back to the window with a terminal focused still closes it).
+    if (isDrawer() && v.everFocused && !now && !v.tlDialog && window()?.active !== false) hideDrawer(v, cx);
     if (now === v.hadFocus) return;
     v.hadFocus = now;
     // Auto-hide: the panel goes when it loses the keyboard (esc, enter on a file, a click
@@ -54,6 +74,29 @@ export function attachKeys(v, cx) {
       if (c === "focus") { take(v); cx.notify(); }
     }
   });
+}
+
+// Slide out, then close the window once the slide is done.
+function hideDrawer(v, cx) {
+  if (v.closing) return;
+  v.closing = true; v.slid = false;
+  cx.notify();
+  cx.timer.after(SLIDE.duration + 20, () => {
+    if (shared(DRAWER_KEY)?.at === v.drawerAt) setShared(DRAWER_KEY, null);
+    closeOverlay(props().overlay);
+  });
+}
+
+// The drawer's frame around the Files view: clipped, solid (the layout's background is clear),
+// pressing on it doesn't drag the window, and the view slides on `left` natively.
+export function drawer(v, el) {
+  if (!isDrawer()) return el;
+  return div().id("tl-drawer").size_full().overflow_hidden()
+    .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+    .child(div().id("tl-drawer-slide").relative().size_full().bg("#1e1e2e")
+      .left(v.slid ? 0 : 340).opacity(v.slid ? 1 : 0)
+      .transition("left", SLIDE).transition("opacity", SLIDE)
+      .child(el));
 }
 
 function take(v) {
@@ -111,6 +154,7 @@ export function onKey(v, e, cx) {
     // pane as focused, and pane.focus on it hands the keyboard back.
     if (v.back && panes().some((p) => p.pane === v.back)) run("pane.focus", { pane: v.back });
     else run("pane.go", { direction: "left" });
+    if (isDrawer()) hideDrawer(v, cx);
   } else return;
   cx.stop_propagation();
   cx.notify();
@@ -194,6 +238,7 @@ function reload(v, dirs, sel, cx) {
 // Called from render: dialog answers and ctrl-space e. Focus can't move during render (and a task
 // spawned here starts inside it), so both go through a timer, which runs after render.
 function poll(v, cx) {
+  if (isDrawer() && !v.closing && shared(DRAWER_KEY)?.at !== v.drawerAt && shared(DRAWER_KEY)) cx.timer.after(1, (cx) => hideDrawer(v, cx)); // a newer drawer opened
   const f = shared(FOCUS_KEY);
   if (f !== v.seenFocus) { v.seenFocus = f; cx.timer.after(1, (cx) => { take(v); cx.notify(); }); }
   const r = shared(RESULT_KEY);

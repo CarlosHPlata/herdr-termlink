@@ -2,8 +2,8 @@
 
 import { div } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { spaces, machines, run, window as win, nextCommand, shared, setShared, layout } from "herdr";
-import { C, MONO, own, upper, neonLine, RAIL_PX } from "./kit.js";
+import { spaces, machines, run, window as win, nextCommand, shared, setShared, layout, openOverlay, settings } from "herdr";
+import { C, MONO, own, upper, neonLine, RAIL_PX, geo } from "./kit.js";
 
 const pad = (n) => String(n).padStart(2, "0");
 
@@ -44,13 +44,15 @@ function toggleSideSize() {
 // ctrl-space e: show the panel on Files and give it the keyboard. A hidden panel gets no
 // commands, so the header shows it and termlink-files takes the keyboard when it sees the stamp.
 function showFiles() {
+  if (filesMode() === "auto-hide-drawer") return openDrawer();
   run("layout.show", { id: "panel" });
   run("layout.select", { stack: "panel-body", child: "files" });
   setShared("termlink.files.focus", Date.now());
 }
 
 // The Files panel's mode, from its block in layouts/termlink.json: content.props.mode,
-// "pinned" (default) or "auto-hide". termlink-files reads the same prop.
+// "pinned" (default), "auto-hide" (the column shows and hides) or "auto-hide-drawer" (it slides
+// over the terminals instead). termlink-files reads the same prop.
 function filesMode() {
   const find = (n) => {
     if (!n || typeof n !== "object") return null;
@@ -58,19 +60,40 @@ function filesMode() {
     for (const c of n.children ?? []) { const hit = find(c); if (hit) return hit; }
     return null;
   };
-  return find(layout())?.content?.props?.mode === "auto-hide" ? "auto-hide" : "pinned";
+  const m = find(layout())?.content?.props?.mode;
+  return m === "auto-hide" || m === "auto-hide-drawer" ? m : "pinned";
 }
 
 // ctrl-space o: pinned toggles the panel; auto-hide has nothing to keep open, so it does what
 // ctrl-space e does (show Files with the keyboard; it hides again when the keyboard leaves).
 function togglePanel() {
-  if (filesMode() === "auto-hide") showFiles();
-  else run("layout.toggle", { id: "panel" });
+  if (filesMode() === "pinned") run("layout.toggle", { id: "panel" });
+  else showFiles();
+}
+
+// auto-hide-drawer: Files is a drawer over the terminals instead of a column beside them, so nothing
+// resizes. A frameless window holding a termlink-files copy (props { mode: "drawer" }) that slides
+// itself in and out (keys.js). It sits where the panel column would: right edge of the panes,
+// from below the header to above the footer. While it's up it holds "termlink.drawer"; then
+// ctrl-space e only gives it the keyboard back.
+const DRAWER_W = 340;
+function openDrawer() {
+  if (shared("termlink.drawer")) return setShared("termlink.files.focus", Date.now());
+  const top = 44 + 6 + 8; // header, body padding, panel padding
+  // width/height are layout px (Herdr zooms them); `at` is window px, so it's zoomed here.
+  const z = settings()?.zoom || 1;
+  setShared("termlink.drawer", { at: Date.now() });
+  openOverlay({
+    kind: "window", mod: "termlink-files", frame: "none", props: { mode: "drawer" },
+    width: DRAWER_W, height: geo.bodyH > 100 ? geo.bodyH - 16 : 0.85,
+    at: { x: Math.round(Math.max(0, geo.winW - 24 - DRAWER_W) * z), y: Math.round(top * z) },
+  });
 }
 
 export default class Header {
   init(_p, cx) {
     this.start = Date.now();
+    setShared("termlink.drawer", null); // shared.json outlives the window: no drawer is up at start
     // Key commands for the layout: "termlink.side_size" and "termlink.files" here; side.js takes
     // "termlink.sidebar".
     cx.spawn(async () => {
@@ -104,6 +127,7 @@ export default class Header {
     return h_flex()
       .id("tl-header")
       .size_full()
+      .on_size_change((size) => { geo.winW = Math.round(size.width / (settings()?.zoom || 1)) + 48; })
       .gap(14)
       .items_center()
       .font_family(MONO)

@@ -128,11 +128,25 @@ opacity; the focused and any waiting agent at full. Names show as tooltips.
 - `mods/termlink-dialog/`: props `{id, mode: "prompt" | "confirm", title, detail, yes, no}`; square,
   `#1e1e2e`, 1px `#45475a`, a yellow `┤ TITLE ├` rule; prompt: Enter answers with the text;
   confirm: `y` yes, `n` / Esc no (Enter does nothing, so a delete needs a deliberate key).
-- Panel mode: the `files` block's `content.props.mode`, `"pinned"` (default) or `"auto-hide"`.
-  termlink-files reads `props().mode`; the header finds the `files` node in `layout()`.
-  `ctrl-space o` is `termlink.panel` (header): pinned → `layout.toggle panel`; auto-hide → same
-  as `termlink.files`. Auto-hide: the panel's 250 ms focus check runs `layout.hide panel` when the
-  keyboard leaves, unless a dialog of its own is open or `window().active` is false.
+- Panel mode: the `files` block's `content.props.mode`, `"pinned"` (default), `"auto-hide"` or
+  `"auto-hide-drawer"`. termlink-files reads `props().mode`; the header finds the `files` node in
+  `layout()`. `ctrl-space o` is `termlink.panel` (header): pinned → `layout.toggle panel`; both
+  auto-hide modes → same as `termlink.files`. Auto-hide: the panel's 250 ms focus check runs
+  `layout.hide panel` when the keyboard leaves, unless a dialog of its own is open or
+  `window().active` is false. In drawer mode the column copy behaves like auto-hide (rests hidden).
+- Drawer (`auto-hide-drawer`): `ctrl-space e` makes the header `openOverlay({kind: "window",
+  mod: "termlink-files", frame: "none", props: {mode: "drawer"}, width: 340, height, at})`.
+  Geometry comes from sizes the termlink copies measure (`geo` in `kit.js`): the header's width
+  + 48 (root padding) is the window width, the sidebar's height is the body's; the drawer goes at
+  `x = winW − 24 − 340`, `y = 44 + 6 + 8`, height `bodyH − 16`. While it's up, shared
+  `termlink.drawer` = `{at}` (the open's time); a second `ctrl-space e` only re-stamps
+  `termlink.files.focus`. The drawer copy (`keys.js` `drawer()`) wraps the Files view in a clipped
+  root that stops mouse-down (so it doesn't drag the window) and a solid `#1e1e2e` child with
+  `.left(slid ? 0 : 340).opacity(slid ? 1 : 0)` and `.transition("left" | "opacity", 180ms
+  ease-out)`; `slid` flips 16 ms after init (and takes the keyboard). On losing the keyboard (checked
+  every 250 ms tick once it has had it), on `esc`, or when a newer drawer's `at` appears, it sets
+  `slid = false` and `closeOverlay`s itself 200 ms later. The header clears `termlink.drawer` at
+  start; a drawer that starts > 2 s after its `at` (a reload) closes at once.
 - `ctrl-space e` is `termlink.files`: the header (always shown) runs `layout.show panel`,
   `layout.select` Files and stamps shared `termlink.files.focus`; termlink-files takes the keyboard
   when it sees a new stamp (or a fresh one at start, if the panel was hidden until then).
@@ -154,6 +168,12 @@ opacity; the focused and any waiting agent at full. Names show as tooltips.
 - Fields you add to the cloned Files view must not reuse its own names: it already has
   `this.pending` (a Set of loading folders, reset on every context change), so the dialog state is
   `tlDialog`. Reusing `pending` left auto-hide stuck after the first viewer tab.
+- Overlay `width`/`height` are layout px (Herdr zooms them) but `at` is window px: multiply
+  `at` by `settings().zoom`, or at zoom 1.3 the drawer lands left of and above its spot.
+- The layout's `background` and `canvas` are transparent for the blur, so `theme().background`
+  is clear too: the drawer paints its own solid `#1e1e2e`, or the terminal shows through.
+- `overlay.close {id}` from a shell can't reach a mod window by mod name; the drawer closes
+  itself (`closeOverlay(props().overlay)`).
 - Testing auto-hide from a shell: the Herdr window isn't the active OS window then, so the
   `window().active` guard keeps the panel; that guard is what stops alt-tab from hiding it.
 - `FocusHandle.focus()` throws during render, and a task `cx.spawn`ed from `render()` starts inside
@@ -184,6 +204,9 @@ opacity; the focused and any waiting agent at full. Names show as tooltips.
   row; `j`/`k` move it, `⏎` on a file opens it and the keyboard goes there, `esc` goes back.
 - With `"mode": "auto-hide"`: `ctrl-space e` shows Files focused, `esc` hides it and the panes
   widen; `ctrl-space o` does the same as `e`. With `"pinned"` the panel stays after `esc`.
+- With `"mode": "auto-hide-drawer"`: `ctrl-space e` slides Files in over the panes at the right
+  (flush with the panes' right edge, header to footer) without resizing them; `esc` slides it out
+  and the keyboard is back in the pane; pressing `ctrl-space e` twice leaves one drawer.
 - `a` then `x/y.txt` ⏎ creates `x/y.txt`; `c`, `p` on it makes `y copy.txt`; `r`, `y` deletes it.
 
 - `ctrl-space o` shows a square Files panel at the right with a `┤ FILES ├` header the same
