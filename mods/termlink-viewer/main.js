@@ -15,6 +15,9 @@ function short(path) {
 export default class Viewer extends View {
   init(_props, cx) {
     this.code = null; this.error = null; this.lines = 0; this.truncated = false;
+    // Take the keyboard when opened, so Enter in the Files panel lands here.
+    this.handle = cx.focus_handle();
+    this.handle.focus();
     this.load(cx);
   }
 
@@ -45,7 +48,7 @@ export default class Viewer extends View {
 
   render() {
     const t = theme(), { file, on } = props() ?? {};
-    return v_flex().id("viewer").size_full().min_h(0).bg(t.background).text_color(t.foreground).font_family("JetBrains Mono")
+    return v_flex().id("viewer").track_focus(this.handle).size_full().min_h(0).bg(t.background).text_color(t.foreground).font_family("JetBrains Mono")
       .child(this.code
         ? Editor.new(this.code).flex_1().min_h(0)
         : div().flex_1().p(14).text_size(12).text_color("#5bb0b0").child(this.error || "Loading file…"))

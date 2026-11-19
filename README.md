@@ -14,16 +14,35 @@ Copy into your Herdr home (`~/.config/herdr-app`):
 
 - `layouts/termlink.json` → `layouts/`
 - `themes/termlink.json` → `themes/`
-- `mods/termlink/`, `mods/termlink-files/`, `mods/termlink-changes/` and `mods/termlink-viewer/` → `mods/`
+- `mods/termlink/`, `mods/termlink-files/`, `mods/termlink-changes/` and `mods/termlink-viewer/` and `mods/termlink-dialog/` → `mods/`
 - merge `keys.json` into yours (`ctrl-space 0` focus the sidebar, `ctrl-space b` hide/show,
   `ctrl-space shift-b` full ↔ rail, `ctrl-space o` the Files/Changes panel,
-  `ctrl-space e` / `ctrl-space g` switch it to Files / Changes); ask before replacing keys you already use.
+  `ctrl-space e` shows Files and gives it the keyboard, `ctrl-space g` switches it to Changes); ask before replacing keys you already use.
 
-Then `herdr-app check` each of the four mod folders and
+Then `herdr-app check` each of the five mod folders and
 `herdr-app do layout.switch --name termlink`. `ctrl-shift-l` switches back.
 
 Or ask an agent to add `herdr.dev/layouts/CarlosHPlata/herdr-termlink`.
 `RECIPE.md` is the brief to build it from scratch.
+
+## The Files panel from the keyboard
+
+`ctrl-space e` shows the panel on Files and gives it the keyboard (so does `ctrl-space l` from the
+rightmost pane). Its legend turns yellow, a yellow cursor marks the row, and the keys show at the
+bottom:
+
+| Key | Does |
+|---|---|
+| `j` `k` / `↓` `↑` | move |
+| `l` / `→` | open a folder, then go into it |
+| `h` / `←` | close a folder, or go up to its parent |
+| `⏎` | a folder folds; a file opens (in Neovim or Helix, else a viewer tab) and takes the keyboard |
+| `a` | new file in the folder under the cursor (end the name with `/` for a folder) |
+| `c` / `p` | copy / paste: a copy goes beside it as `name copy.ext`, `name copy 2.ext`, … |
+| `r` | delete, after a confirmation: `y` or click DELETE; `n`, `esc` or KEEP cancels |
+| `esc` | back to the pane you came from |
+
+Pasting works within one machine (copy and paste in spaces on the same machine).
 
 ## Open files in Neovim or Helix
 
@@ -66,7 +85,8 @@ change), reads no files outside its folder and makes no network requests.
 with `termlink-viewer` instead of previewing it inside the panel. `termlink-viewer` only reads
 the file it was opened with. Like the originals, they read
 the shown space's folder and run `git` in it (status, diff, and `git commit` when you press
-Commit in Changes), on the space's machine. No network requests. On a file click, `termlink-files` also runs `sh`
+Commit in Changes), on the space's machine. No network requests. `termlink-files` creates, copies (`cp -R` / `Copy-Item`) and deletes (`rm -rf` / `Remove-Item`)
+files only when you press `a`, `p` or `r` (and confirm). On a file click, it also runs `sh`
 on the space's machine to check whether Neovim / Helix are installed (and Helix's config), find a Neovim's socket and
 run `nvim --server … --remote`, or write `~/.cache/herdr/hx-open`; and `hc get` / `hc keys` on the
 space's terminals (see Open files in Neovim or Helix).

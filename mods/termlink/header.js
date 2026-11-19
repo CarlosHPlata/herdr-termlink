@@ -41,13 +41,24 @@ function toggleSideSize() {
   run("layout.show", { id: "sidebar" });
 }
 
+// ctrl-space e: show the panel on Files and give it the keyboard. A hidden panel gets no
+// commands, so the header shows it and termlink-files takes the keyboard when it sees the stamp.
+function showFiles() {
+  run("layout.show", { id: "panel" });
+  run("layout.select", { stack: "panel-body", child: "files" });
+  setShared("termlink.files.focus", Date.now());
+}
+
 export default class Header {
   init(_p, cx) {
     this.start = Date.now();
-    // Key commands for the layout: "termlink.side_size" here; side.js takes "termlink.sidebar".
+    // Key commands for the layout: "termlink.side_size" and "termlink.files" here; side.js takes
+    // "termlink.sidebar".
     cx.spawn(async () => {
       for (;;) {
-        if ((await nextCommand()) === "side_size") toggleSideSize();
+        const c = await nextCommand();
+        if (c === "side_size") toggleSideSize();
+        else if (c === "files") showFiles();
       }
     });
     // The clock counts minutes: redraw once a minute, on the minute, and only while the

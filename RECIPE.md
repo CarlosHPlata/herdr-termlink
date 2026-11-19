@@ -119,6 +119,18 @@ opacity; the focused and any waiting agent at full. Names show as tooltips.
   the pid and its `pgrep -P` children in `$XDG_RUNTIME_DIR`, `$TMPDIR` (macOS) and `/tmp`, then
   `nvim --server <s> --remote <file>`. Then Helix: write the path to `~/.cache/herdr/hx-open`,
   `hc keys <t> esc f9`. Then `tab.select` and `pane.focus`; false means the viewer tab.
+- `mods/termlink-files/keys.js`: `attachKeys` (focus handle, ScrollHandle, the `nextCommand`
+  "focus" loop), `onKey` (j/k/h/l, arrows, ⏎, a, c, p, r, esc), `legend`, `isCursor`/`cursorRow`
+  (`#26263a` row, `#fbd207` text), `hints` (11px row, dashed `#45475a` rule, keys yellow 600) and
+  `ops.create|paste|remove` (PowerShell on local Windows, `sh` elsewhere). `mod.json` gets
+  `"focusable": true`. Dialogs: `openOverlay({mod: "termlink-dialog", kind: "dialog", frame: "none"})`;
+  the answer comes back in shared `termlink.dialog.result` = `{id, ok, value}`.
+- `mods/termlink-dialog/`: props `{id, mode: "prompt" | "confirm", title, detail, yes, no}`; square,
+  `#1e1e2e`, 1px `#45475a`, a yellow `┤ TITLE ├` rule; prompt: Enter answers with the text;
+  confirm: `y` yes, `n` / Esc no (Enter does nothing, so a delete needs a deliberate key).
+- `ctrl-space e` is `termlink.files`: the header (always shown) runs `layout.show panel`,
+  `layout.select` Files and stamps shared `termlink.files.focus`; termlink-files takes the keyboard
+  when it sees a new stamp (or a fresh one at start, if the panel was hidden until then).
 - `mods/termlink-viewer/`: props `{file, on}`; `readTextFile` → a readonly `EditorState`
   (same language map and syntax colors as Files) and the status line. `pane.js` names a
   `termlink-viewer` pane after its tab (`spaces()[].tabs[]` by `p.tab`), since a mod pane's
@@ -134,6 +146,8 @@ opacity; the focused and any waiting agent at full. Names show as tooltips.
 - `hc exec` on the command line splits a `sh -c` script on spaces; a mod's `exec()` doesn't.
   `hc file` paths don't expand `~`.
 - A mod copy starts only once it's shown: test a mod in a shown tab, not `focus: false`.
+- `FocusHandle.focus()` throws during render, and a task `cx.spawn`ed from `render()` starts inside
+  it: react to shared state from render with `cx.timer.after(1, …)`, not `cx.spawn`.
 - Write a new mod's `mod.json` (`"place": "none"`) before its `main.js`: if Herdr sees the
   folder first it docks a copy by wrapping the layout root in a new row, and root-only fields
   (`titlebar`, `window_blur`, theme) stop applying.
@@ -155,6 +169,10 @@ opacity; the focused and any waiting agent at full. Names show as tooltips.
   status), not `agents()`, so a space with an idle shell-started agent still shows one.
 
 ## Done when
+
+- `ctrl-space e` from a terminal shows Files with a yellow legend, a yellow cursor row and the key
+  row; `j`/`k` move it, `⏎` on a file opens it and the keyboard goes there, `esc` goes back.
+- `a` then `x/y.txt` ⏎ creates `x/y.txt`; `c`, `p` on it makes `y copy.txt`; `r`, `y` deletes it.
 
 - `ctrl-space o` shows a square Files panel at the right with a `┤ FILES ├` header the same
   height as the pane headers; `ctrl-space g` shows Changes with the same frame.
