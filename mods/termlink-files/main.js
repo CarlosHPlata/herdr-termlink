@@ -2,7 +2,7 @@
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, Editor, EditorState } from "gpui-base";
 import { spaces, panes, focused, exec, readTextFile, watchFolder, theme, settings, window, run } from "herdr";
-import { openInHelix } from "./helix.js";
+import { openInEditor } from "./editors.js";
 
 function location() {
   const space = spaces().find(s => s.active), f = focused();
@@ -131,7 +131,7 @@ export default class Files extends View {
   open(path, cx) {
     const file = `${this.root}/${path}`, on = this.on ?? null;
     cx.spawn(async () => {
-      if (await openInHelix(file, on).catch(() => false)) return;
+      if (await openInEditor(file, on).catch(() => false)) return;
       const space = spaces().find(s => s.active);
       run("tab.new", { name: path.split("/").pop(), ...(space ? { space: space.id } : {}),
         mod: "termlink-viewer", props: { file, on } });

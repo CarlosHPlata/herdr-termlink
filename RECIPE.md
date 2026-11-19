@@ -110,14 +110,15 @@ opacity; the focused and any waiting agent at full. Names show as tooltips.
   `#2a2b3d`, `font_family("JetBrains Mono")`, and the 42px header → 28px with the legend and a
   dashed bottom rule. In Files, a file click runs `tab.new {name: <file name>, space, mod:
   "termlink-viewer", props: {file: <root>/<path>, on: <machine>}}` instead of `show()`.
-- `mods/termlink-files/helix.js` (`openInHelix(file, on)`): phase 0, per machine and cached
-  (10 min if wired, 30 s if not): `sh -c` checks `command -v hx` and that
-  `${XDG_CONFIG_HOME:-~/.config}/helix/config.toml` has a line with `herdr/hx-open`. Then the
-  shown space's terminal panes (focused, shown tab, other tabs) through `hc get --json`: the
-  first whose `foreground.name` is `hx`/`helix` and whose `foreground.cwd` holds the file.
-  Writes the path with `exec("sh", ["-c", 'printf %s "$1" > ~/.cache/herdr/hx-open', …], {on})`,
-  `hc keys <t> esc f9`, then `tab.select` and `pane.focus`. The click falls back to the viewer
-  tab when it resolves false.
+- `mods/termlink-files/editors.js` (`openInEditor(file, on)`): per machine, cached (10 min if yes,
+  30 s if no): `sh -c 'command -v nvim'`; Helix: `command -v hx` and a line with `herdr/hx-open` in
+  `${XDG_CONFIG_HOME:-~/.config}/helix/config.toml`. Neither: no pane scan at all. Otherwise the
+  shown space's terminal panes on that machine (focused, shown tab, other tabs) through
+  `hc get --json`, keeping those whose `foreground.cwd` holds the file. Neovim first: the socket
+  is named after the `nvim --embed` child, not the TUI pid, so look for `nvim.<pid>.*` sockets of
+  the pid and its `pgrep -P` children in `$XDG_RUNTIME_DIR`, `$TMPDIR` (macOS) and `/tmp`, then
+  `nvim --server <s> --remote <file>`. Then Helix: write the path to `~/.cache/herdr/hx-open`,
+  `hc keys <t> esc f9`. Then `tab.select` and `pane.focus`; false means the viewer tab.
 - `mods/termlink-viewer/`: props `{file, on}`; `readTextFile` → a readonly `EditorState`
   (same language map and syntax colors as Files) and the status line. `pane.js` names a
   `termlink-viewer` pane after its tab (`spaces()[].tabs[]` by `p.tab`), since a mod pane's
@@ -157,6 +158,8 @@ opacity; the focused and any waiting agent at full. Names show as tooltips.
 
 - `ctrl-space o` shows a square Files panel at the right with a `┤ FILES ├` header the same
   height as the pane headers; `ctrl-space g` shows Changes with the same frame.
+- With Neovim running in a WSL space's folder, and Helix too in an earlier tab, a click opens the
+  file in Neovim (its status line names it) in about 200 ms and leaves Helix alone.
 - With the F9 binding in WSL's Helix config and `hx` running in a WSL space's folder, clicking a
   file of that folder in Files shows that Helix with the file open (status line names it) in
   about 300 ms; with the binding removed, the same click opens the viewer tab.
