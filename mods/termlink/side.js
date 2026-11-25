@@ -103,7 +103,7 @@ function plus(id, label, tip, onClick) {
 // A machine: ▾ NAME ──── [+] (the [+] only while hovered: a new space there),
 // or ▸ NAME ──── OFFLINE. Click folds an online one; an offline one opens
 // Settings → Machines.
-function machineRow(m, folded, fold, hovered, onHover) {
+function machineRow(m, folded, fold, hovered, onHover, cursor) {
   const key = m.name ?? "local";
   // The [+] keeps its room when hidden, so the line doesn't jump on hover.
   const add = plus(`tl-m-new-${key}`, "[+]", `New space on ${m.name ?? "this computer"}`, () => run("space.new", { machine: m.name ?? "" }));
@@ -118,6 +118,7 @@ function machineRow(m, folded, fold, hovered, onHover) {
     .cursor_pointer()
     .text_color(C.muted)
     .hover((s) => s.text_color(C.ink))
+    .when(cursor, (el) => el.bg(C.s100).text_color(C.yellow))
     .on_hover((h, cx) => onHover(key, h, cx))
     .on_click((_e, cx) => (m.online ? fold(key, cx) : run("app.settings", { section: "machines" })))
     .child(div().flex_none().w(10).text_size(14).child(folded || !m.online ? "▸" : "▾"))
@@ -149,22 +150,54 @@ export default class Side {
       for (;;) {
         if ((await nextCommand()) !== "sidebar") continue;
         this.back = focused()?.pane ?? null;
-        this.cursor = (spaces().find((s) => s.active) ?? spaces()[0])?.id ?? null;
+        this.cursor = this.startCursor();
         this.handle.focus();
         cx.notify();
       }
     });
   }
 
-  // ↑↓ / j k move, ⏎ opens the space, n new space, m machine, ? keys, esc goes back.
+  // Where the cursor lands on focus: the shown space, or its machine when that's folded.
+  startCursor() {
+    const order = this.order ?? [];
+    const s = spaces().find((x) => x.active) ?? spaces()[0];
+    if (s && order.some((e) => e.id === s.id)) return s.id;
+    const m = order.find((e) => e.machine && e.key === (s?.machine ?? "local"));
+    return (m ?? order[0])?.id ?? null;
+  }
+
+  // Fold or unfold a machine (remembered).
+  toggleFold(key) {
+    this.folded.has(key) ? this.folded.delete(key) : this.folded.add(key);
+    try {
+      localStorage.setItem("folded", JSON.stringify([...this.folded]));
+    } catch {}
+  }
+
+  // ↑↓ / j k move over machines and spaces; h ← folds a machine (on a space: goes up to
+  // its machine), l → unfolds it; ⏎ opens the space or toggles the machine; n new space,
+  // m machine, ? keys, esc goes back.
   key(e, order, cx) {
     const i = Math.max(0, order.findIndex((s) => s.id === this.cursor));
+    const cur = order[i];
     const k = e.key;
     if (k === "down" || k === "j") this.cursor = order[(i + 1) % order.length]?.id ?? null;
     else if (k === "up" || k === "k") this.cursor = order[(i + order.length - 1) % order.length]?.id ?? null;
-    else if (k === "enter") {
+    else if (k === "left" || k === "h") {
+      if (cur?.machine) {
+        if (cur.m.online && !this.folded.has(cur.key)) this.toggleFold(cur.key);
+      } else if (cur) {
+        const up = order.find((x) => x.machine && x.key === cur.key);
+        if (up) this.cursor = up.id;
+      }
+    } else if (k === "right" || k === "l") {
+      if (cur?.machine && cur.m.online && this.folded.has(cur.key)) this.toggleFold(cur.key);
+    } else if (k === "enter" && cur?.machine) {
+      if (cur.m.online) this.toggleFold(cur.key);
+      else run("app.settings", { section: "machines" });
+    } else if (k === "enter") {
       // Show that space and hand the keyboard to its tab's focused pane.
-      const s = order.find((x) => x.id === this.cursor);
+      const s = cur?.space;
       this.cursor = null;
       if (s) {
         run("space.select", { id: s.id });
@@ -226,19 +259,21 @@ export default class Side {
       cx.notify();
     };
     const fold = (key, cx) => {
-      this.folded.has(key) ? this.folded.delete(key) : this.folded.add(key);
-      try {
-        localStorage.setItem("folded", JSON.stringify([...this.folded]));
-      } catch {}
+      this.toggleFold(key);
       cx.notify();
     };
     const machs = this.groups(list);
     const small = shared("termlink.side.mode") === "small";
-    // The spaces in tree order, as the keyboard cursor walks them (folded and offline
-    // skipped; the rail folds nothing).
-    const order = machs.flatMap((m) =>
-      (!small && this.folded.has(m.name ?? "local")) || !m.online ? [] : list.filter((s) => (s.machine ?? null) === m.name),
-    );
+    // The rows in tree order, as the keyboard cursor walks them: each machine, then its
+    // spaces (folded and offline ones skipped). The rail shows no foldable machines, so
+    // there the cursor walks spaces only.
+    const order = machs.flatMap((m) => {
+      const key = m.name ?? "local";
+      const head = small ? [] : [{ id: `m:${key}`, machine: true, key, m }];
+      const open = m.online && (small || !this.folded.has(key));
+      return [...head, ...(open ? list.filter((s) => (s.machine ?? null) === m.name).map((s) => ({ id: s.id, key, space: s })) : [])];
+    });
+    this.order = order;
     const focus = this.handle.is_focused();
     if (!focus) this.cursor = null;
     if (small) return this.rail(machs, list, ps, order, focus);
@@ -254,7 +289,7 @@ export default class Side {
               .hover((s) => s.text_color(C.ink)).on_click(() => run("space.new", { machine: m.name ?? "" }))
               .child("+ new space")]
           : [];
-      return v_flex().flex_none().child(machineRow(m, folded, fold, this.hoverM === key, hoverM)).children(body);
+      return v_flex().flex_none().child(machineRow(m, folded, fold, this.hoverM === key, hoverM, focus && this.cursor === `m:${key}`)).children(body);
     });
     const addMachine = () => openOverlay({ mod: "machine-add", kind: "dialog", width: 560 });
     const keys = h_flex()
@@ -272,7 +307,7 @@ export default class Side {
       // ctrl-space 0 takes the keyboard; clicking the hint does the same.
       .child(keyHint("tl-k-focus", "^␣0", "focus", () => {
         this.back = focused()?.pane ?? null;
-        this.cursor = (list.find((s) => s.active) ?? list[0])?.id ?? null;
+        this.cursor = this.startCursor();
         this.handle.focus();
       }))
       .child(keyHint("tl-k-open", "⏎", "open"))
